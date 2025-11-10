@@ -1,5 +1,19 @@
+# Virtual environment
 venv/
+.venv/
+
+# Python cache
 __pycache__/
-.env
-.ipynb_checkpoints/
 *.pyc
+
+# Environment variables
+.env
+
+# VSCode settings
+.vscode/
+
+# Gradio cache
+gradio_cached_examples/
+
+# macOS
+.DS_Store
