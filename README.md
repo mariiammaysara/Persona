@@ -99,7 +99,6 @@ Add new characters easily by appending a new dictionary entry.
 * Improve Streamlit UI/UX
 * Add user-customizable character settings
 * Deploy on **Hugging Face Spaces** for public access
-* Add voice mode (optional)
 * Add chat history export
 
 ---
@@ -179,14 +178,8 @@ This project is open-source under the **MIT License**.
 
 ---
 
-## 👩‍💻 Author
+👩‍💻 Author
 
-Your Name — Character AI Chatbot Developer
+Mariam Maysara 
 
-If you'd like, I can:
 
-* Add screenshots section
-* Add badges (Python version, FastAPI, Streamlit, etc.)
-* Add a demo GIF placeholder
-* Make a short GitHub description
-  Just قولي!
