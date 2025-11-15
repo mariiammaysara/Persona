@@ -172,14 +172,11 @@ http://localhost:8501
 
 ---
 
-## 📄 License
+##  License
 
 This project is open-source under the **MIT License**.
 
 ---
 
-👩‍💻 Author
-
-Mariam Maysara 
 
 
