@@ -1,17 +1,17 @@
 # ✦ P E R S O N A
 
 > *A cinematic, luxury AI chat experience designed for the modern intellectual.*
+<img width="783" height="193" alt="Screenshot 2026-01-12 042910" src="https://github.com/user-attachments/assets/decc3da8-91f7-4428-b304-8da10066d8f2" />
 
 
-![Persona Showcase](https://via.placeholder.com/1200x600/0A0908/E3D5CA?text=PERSONA+AI)
 
-## 🕯️ Overview
+##  Overview
 
 **Persona** is a high-fidelity AI chat interface that merges minimalist noir aesthetics with cutting-edge Large Language Models. Built for users who demand more than just utility, Persona offers a visceral, "expensive" user experience—featuring immersive soundscapes, fluid animations, and deep, character-driven interactions.
 
 Powered by **Groq** (Llama 3 70B) for lightning-fast, intellectual responses, and orchestrating a seamless dance between a **Next.js** frontend and **FastAPI** backend.
 
-## ✨ Features
+##  Features
 
 *   **Luxury Aesthetics:** A curated palette of Deep Black (`#0A0908`) and Cream (`#E3D5CA`), featuring glassmorphism and breathing ambient animations.
 *   **Dynamic Personas:** Switch instantly between distinct AI characters:
@@ -28,13 +28,13 @@ Powered by **Groq** (Llama 3 70B) for lightning-fast, intellectual responses, an
     *   Responsive "Zen" Sidebar.
     *   **Production Ready:** Dockerized architecture with comprehensive documentation.
 
-## 📂 Project Structure
+##  Project Structure
 
 A clean, modular monorepo architecture separating concerns between the high-fidelity UI and the robust AI engine.
 
 ```graphql
 persona/
-├── 📂 frontend/               # Next.js Application (Dockerized)
+├──   frontend/               # Next.js Application (Dockerized)
 │   ├── app/                  # App Router (Pages & Layouts)
 │   ├── components/           # Reusable UI Components
 │   │   ├── ChatArea.tsx      # Message Rendering & Scroll Logic
@@ -45,7 +45,7 @@ persona/
 │   ├── Dockerfile            # Multi-stage release build
 │   └── tailwind.config.ts    # Custom Design Tokens (Colors, Fonts)
 │
-├── 📂 backend/                # FastAPI Server (Dockerized)
+├──   backend/                # FastAPI Server (Dockerized)
 │   ├── main.py               # API Routes & Logic
 │   ├── persona_config/       # Configuration Modules
 │   │   └── prompts.py        # Persona Prompts & Definitions
@@ -58,7 +58,7 @@ persona/
 └── .env                      # API Keys (GitIgnored)
 ```
 
-## 🏗️ Architecture Flow
+##  Architecture Flow
 
 1.  **User Input:** The frontend captures the message and current history.
 2.  **API Call:** Next.js sends a structured payload to the backend service.
@@ -66,7 +66,7 @@ persona/
 4.  **Inference:** The **Groq Llama 3** engine generates a high-speed response stream.
 5.  **Rendering:** The frontend renders the Markdown response in real-time with typing effects.
 
-## 📡 API Reference
+##  API Reference
 
 ### `POST /chat`
 
@@ -80,7 +80,7 @@ Streams a response from the AI persona based on conversation history.
 
 **Response:** `text/event-stream` (Chunked plain text)
 
-## 🛠️ Technology Stack
+##  Technology Stack
 
 ### Frontend
 *   **Framework:** Next.js 15 (React 19)
@@ -98,7 +98,7 @@ Streams a response from the AI persona based on conversation history.
 *   **Containerization:** Docker & Docker Compose
 *   **Linting:** ESLint & Python Type Hints
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 *   Docker & Docker Compose (Recommended)
@@ -118,7 +118,7 @@ cp .env.example .env
 # Edit .env and paste your GROQ_API_KEY
 ```
 
-### 3. Run with Docker (Recommended) 🐳
+### 3. Run with Docker (Recommended) 
 The easiest way to run the full stack:
 ```bash
 docker-compose up --build
@@ -145,20 +145,20 @@ npm install
 npm run dev
 ```
 
-## 🎨 Design Philosophy
+##  Design Philosophy
 
 > "Design is not just what it looks like and feels like. Design is how it works."
 
 Every interaction in Persona—from the subtle glow of the signature to the spring-physics of the sidebar—is crafted to feel physical and deliberate. We avoid generic components in favor of a bespoke "Noir" identity.
 
-## 👤 Author
+##  Author
 
 **Designed & Developed by Mariam Maysara**
 
-*   🌐 **LinkedIn:** [Mariam Maysara](https://www.linkedin.com/in/mariam-maysara/)
-*   🐙 **GitHub:** [mariiammaysara](https://github.com/mariiammaysara)
+*    **LinkedIn:** [Mariam Maysara](https://www.linkedin.com/in/mariam-maysara/)
+*    **GitHub:** [mariiammaysara](https://github.com/mariiammaysara)
 
-> 🚀 **Open for opportunities & collaborations.** Feel free to reach out to discuss AI, Web Development, or Product Design.
+>  **Open for opportunities & collaborations.** Feel free to reach out to discuss AI, Web Development, or Product Design.
 
 ---
 *© 2026 Persona AI. All Rights Reserved.*
