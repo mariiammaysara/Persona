@@ -42,7 +42,12 @@ client = Groq(api_key=GROQ_API_KEY)
 # In production, restrict allow_origins to specific domains.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://persona-frontend-3dmd.onrender.com",
+        "https://persona-frontend-10bn.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
