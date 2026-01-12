@@ -210,7 +210,23 @@ export default function Page() {
         }
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'}/chat`, {
+      // Resolve Backend URL
+      let baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+
+      if (!baseUrl) {
+        if (process.env.NODE_ENV === 'production') {
+          console.error("🚨 CRITICAL: NEXT_PUBLIC_BACKEND_URL is missing in production environment.");
+          throw new Error("Backend URL is not configured.");
+        } else {
+          console.warn("⚠️ NEXT_PUBLIC_BACKEND_URL not found, defaulting to localhost:8000 for development.");
+          baseUrl = 'http://localhost:8000';
+        }
+      }
+
+      // Normalize URL (remove trailing slashes) to prevent double slashes (e.g. .../chat)
+      const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
+
+      const response = await fetch(`${cleanBaseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

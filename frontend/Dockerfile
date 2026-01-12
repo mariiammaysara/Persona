@@ -14,6 +14,10 @@ RUN npm ci
 # Copy all files
 COPY . .
 
+# Build args (Required for Next.js Static Optimization)
+ARG NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+
 # Build the Next.js app
 RUN npm run build
 
