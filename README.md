@@ -1,6 +1,4 @@
-# Persona
-
-*A cinematic, luxury AI chat experience designed for the modern intellectual.*
+# ✦ P e r s o n a
 
 ![Persona Interface](https://github.com/user-attachments/assets/decc3da8-91f7-4428-b304-8da10066d8f2)
 
