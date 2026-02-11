@@ -40,18 +40,19 @@ except Exception as e:
     raise e
 
 # CORS Configuration
-# In production, restrict allow_origins to specific domains.
+# Production-ready setup: Allow only specific origins
+origins = [
+    "https://persona.mariammaysara.com",  # Production Frontend
+    "http://localhost:3000",              # Local Development
+    "http://127.0.0.1:3000",              # Local Development IP
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://persona-frontend-3dmd.onrender.com",
-        "https://persona-frontend-10bn.onrender.com"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],  # Explicit methods for better security
+    allow_headers=["*"],                       # Allow all headers (Content-Type, Authorization, etc.)
 )
 
 
