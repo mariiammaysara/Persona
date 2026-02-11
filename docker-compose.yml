@@ -4,23 +4,33 @@ services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     container_name: persona-backend
     ports:
       - "8000:8000"
     env_file:
-      - .env
-    environment:
-      - GROQ_API_KEY=${GROQ_API_KEY}
-    restart: always
+      - ./backend/.env
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
     container_name: persona-frontend
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
     depends_on:
       - backend
-    restart: always
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

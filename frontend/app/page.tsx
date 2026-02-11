@@ -10,6 +10,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import Sidebar from "@/components/Sidebar";
 import PersonaSelector from "@/components/PersonaSelector";
 import ChatInput from "@/components/ChatInput";
@@ -45,13 +46,20 @@ export default function Page() {
   // State
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [activePersona, setActivePersona] = useState<string>('Sherlock Holmes');
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
   // Derived State
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const messages = currentSession?.messages || [];
-  const selectedPersona = currentSession?.persona || 'Sherlock Holmes';
+
+  // Sync active persona with current session when switched
+  useEffect(() => {
+    if (currentSession?.persona) {
+      setActivePersona(currentSession.persona);
+    }
+  }, [currentSessionId, currentSession?.persona]);
 
   // Load Sessions from LocalStorage
   useEffect(() => {
@@ -65,18 +73,13 @@ export default function Page() {
 
           if (validSessions.length > 0) {
             setSessions(validSessions);
-            // Set most recent as current by timestamp
-            const mostRecent = [...validSessions].sort((a, b) => b.timestamp - a.timestamp)[0];
-            setCurrentSessionId(mostRecent.id);
-          } else {
-            createNewSession();
+            // DO NOT auto-select the most recent session. 
+            // Start with empty state for a fresh experience.
+            setCurrentSessionId(null);
           }
         } catch (e) {
           console.error("Failed to parse sessions from local storage", e);
-          createNewSession();
         }
-      } else {
-        createNewSession();
       }
     }
   }, []);
@@ -96,23 +99,27 @@ export default function Page() {
    * Creates a new empty chat session and sets it as active.
    * If the current session is already empty, it prevents duplication.
    */
-  const createNewSession = () => {
-    // Prevent duplicate empty sessions (Smart Check)
-    const current = sessions.find(s => s.id === currentSessionId);
-    if (current && current.messages.length === 0) {
-      showToast("You're already starting a new conversation.");
-      return;
+  const createNewSession = (initialMessage?: string) => {
+    // If we already have an active empty session, don't create another unless forcing
+    if (currentSessionId) {
+      const current = sessions.find(s => s.id === currentSessionId);
+      if (current && current.messages.length === 0) {
+        showToast("You're already starting a new conversation.");
+        return current.id;
+      }
     }
 
     const newSession: Session = {
       id: Date.now().toString(),
       title: 'New Conversation',
       messages: [],
-      persona: 'Sherlock Holmes', // Default
+      persona: activePersona,
       timestamp: Date.now()
     };
+
     setSessions(prev => [newSession, ...prev]);
     setCurrentSessionId(newSession.id);
+    return newSession.id;
   };
 
   /**
@@ -125,7 +132,8 @@ export default function Page() {
   };
 
   const handleNewChat = () => {
-    createNewSession();
+    // Just reset to null to show Splash screen
+    setCurrentSessionId(null);
   };
 
   const handleSelectSession = (id: string) => {
@@ -137,16 +145,18 @@ export default function Page() {
     const updated = sessions.filter(s => s.id !== id);
     setSessions(updated);
     if (currentSessionId === id) {
-      setCurrentSessionId(updated.length > 0 ? updated[0].id : null);
-      if (updated.length === 0) createNewSession();
+      setCurrentSessionId(null); // Go to splash specificially
     }
   };
 
   const handlePersonaSelect = (id: string) => {
-    if (!currentSessionId) return;
-    setSessions(prev => prev.map(s =>
-      s.id === currentSessionId ? { ...s, persona: id } : s
-    ));
+    setActivePersona(id);
+    // If we have an active session, update its persona too
+    if (currentSessionId) {
+      setSessions(prev => prev.map(s =>
+        s.id === currentSessionId ? { ...s, persona: id } : s
+      ));
+    }
   };
 
   /**
@@ -174,7 +184,22 @@ export default function Page() {
    * @param text - The user's input text.
    */
   const handleSendMessage = async (text: string) => {
-    if (!currentSessionId) return;
+    let targetSessionId = currentSessionId;
+
+    // If no session active, create one implicitly
+    if (!targetSessionId) {
+      const newSession: Session = {
+        id: Date.now().toString(),
+        title: 'New Conversation',
+        messages: [],
+        persona: activePersona,
+        timestamp: Date.now()
+      };
+      // We must add it to state immediately locally to start the flow
+      setSessions(prev => [newSession, ...prev]);
+      setCurrentSessionId(newSession.id);
+      targetSessionId = newSession.id;
+    }
 
     // 1. Optimistic Update (User)
     const userMsg: Message = { role: 'user', content: text };
@@ -183,7 +208,7 @@ export default function Page() {
     const aiPlaceholder: Message = { role: 'ai', content: '' };
 
     setSessions(prev => prev.map(s => {
-      if (s.id === currentSessionId) {
+      if (s.id === targetSessionId) {
         return { ...s, messages: [...s.messages, userMsg, aiPlaceholder], timestamp: Date.now() };
       }
       return s;
@@ -193,13 +218,19 @@ export default function Page() {
 
     try {
       // Prepare History Logic (Context Window of last 5 turns)
+      // We need to look at the CURRENT session state. Since state updates are async, 
+      // we need to rely on what we know about the session.
+      // If it's a new session, history is empty.
+      // If it's existing, we grab from 'messages'.
+
       const history = [];
       let turnsFound = 0;
-      // Iterate backwards to find last turns
+
+      // If existing session, we use the messages from closure (which are slightly stale but checking length helps)
+      // BUT for a BRAND NEW session, messages is [], so history is empty. Correct.
+      // For existing session, messages has the history.
+
       for (let i = messages.length - 1; i >= 0; i--) {
-        // This logic relies on 'messages' from closure, which is the state BEFORE optimistic update.
-        // That is actually correct because we don't want to double-send the new User message in history,
-        // we send it in 'message' field.
         if (messages[i].role === 'user' && messages[i + 1]?.role === 'ai') {
           history.unshift({
             user: messages[i].content,
@@ -223,14 +254,13 @@ export default function Page() {
         }
       }
 
-      // Normalize URL (remove trailing slashes) to prevent double slashes (e.g. .../chat)
       const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
 
       const response = await fetch(`${cleanBaseUrl}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          character: selectedPersona,
+          character: activePersona, // Use activePersona here to be safe
           message: text,
           history: history
         })
@@ -252,7 +282,7 @@ export default function Page() {
 
         // Streaming State Update
         setSessions(prev => prev.map(s => {
-          if (s.id === currentSessionId) {
+          if (s.id === targetSessionId) {
             const updatedMsgs = [...s.messages];
             const lastIdx = updatedMsgs.length - 1;
             // Ensure we are updating the AI placeholder
@@ -268,7 +298,7 @@ export default function Page() {
       // Final Polish & Save (Auto-Title Logic)
       const cleanContent = formatResponse(aiContent);
       setSessions(prev => prev.map(s => {
-        if (s.id === currentSessionId) {
+        if (s.id === targetSessionId) {
           const updatedMsgs = [...s.messages];
           const lastIdx = updatedMsgs.length - 1;
           if (lastIdx >= 0) {
@@ -293,7 +323,7 @@ export default function Page() {
       showToast("Unable to connect to Persona Core.");
       // Rollback: Remove the placeholder if failed
       setSessions(prev => prev.map(s => {
-        if (s.id === currentSessionId) {
+        if (s.id === targetSessionId) {
           const msgs = s.messages.filter(m => m.content !== '' || m.role !== 'ai');
           return { ...s, messages: msgs };
         }
@@ -314,16 +344,21 @@ export default function Page() {
         onDeleteSession={handleDeleteSession}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 relative">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="flex-1 flex flex-col min-w-0 relative"
+      >
         {notification && (
           <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-2 bg-[#1a0f0f] backdrop-blur-md border border-red-900/30 text-red-200/80 text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl transition-all animate-pulse">
             {notification}
           </div>
         )}
 
-        <div className="w-full flex justify-center pt-2 pb-4 z-10">
+        <div className="w-full flex justify-center pt-8 pb-4 z-10">
           <PersonaSelector
-            selectedPersona={selectedPersona}
+            selectedPersona={activePersona}
             onSelect={handlePersonaSelect}
           />
         </div>
@@ -333,7 +368,7 @@ export default function Page() {
             {messages.length > 0 ? (
               <ChatArea messages={messages} isLoading={isLoading} />
             ) : (
-              <Splash personaName={getPersonaName(selectedPersona)} />
+              <Splash personaName={getPersonaName(activePersona)} />
             )}
           </ErrorBoundary>
         </div>
@@ -353,7 +388,7 @@ export default function Page() {
             </a>
           </div>
         </div>
-      </div>
+      </motion.div>
     </main>
   );
 }

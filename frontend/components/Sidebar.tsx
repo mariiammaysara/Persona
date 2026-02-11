@@ -21,6 +21,7 @@ interface SidebarProps {
 /**
  * Sidebar Component.
  * Collapsible sidebar handling session navigation, history management, and responsivity.
+ * Optimized for performance with smooth transitions and reduced heavy effects.
  */
 export default function Sidebar({ sessions = [], currentSessionId, onNewChat, onSelectSession, onDeleteSession }: SidebarProps) {
     const [isOpen, setIsOpen] = useState(true);
@@ -71,7 +72,7 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
             {isMobile && !isOpen && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed top-4 left-4 z-50 p-2 text-persona-text bg-persona-bg/80 backdrop-blur-md rounded-full shadow-glow border border-persona-border/20"
+                    className="fixed top-4 left-4 z-50 p-2 text-persona-text bg-persona-bg/90 backdrop-blur-sm rounded-full shadow-sm border border-persona-border/20"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -85,14 +86,14 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
                 initial={false}
                 animate={isOpen ? "open" : "closed"}
                 variants={sidebarVariants}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
                 className={`
                     h-full border-r border-persona-border/5 flex flex-col bg-persona-bg/95 backdrop-blur-sm overflow-visible z-40
-                    ${isMobile ? 'fixed inset-y-0 left-0 shadow-2xl' : 'relative'}
+                    ${isMobile ? 'fixed inset-y-0 left-0 shadow-xl' : 'relative'}
                 `}
                 drag={isMobile ? "x" : false}
                 dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={0.2}
+                dragElastic={0.1}
                 onDragEnd={(e, { offset, velocity }) => {
                     if (isMobile && (offset.x < -100 || velocity.x < -100)) setIsOpen(false);
                 }}
@@ -106,13 +107,8 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
                     >
                         <div className={`
                             absolute h-16 w-0.5 bg-persona-text rounded-full transition-all duration-300 ease-out
-                            opacity-20 group-hover:opacity-100 group-hover:h-20 group-hover:shadow-[0_0_8px_rgba(227,213,202,0.6)]
+                            opacity-10 group-hover:opacity-60 group-hover:h-20
                         `}></div>
-                        <div className="absolute bg-persona-bg border border-persona-border/20 rounded-full p-1 text-persona-text transition-all duration-300 transform scale-0 group-hover:scale-100 shadow-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform duration-500 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
-                                <polyline points="15 18 9 12 15 6"></polyline>
-                            </svg>
-                        </div>
                     </div>
                 )}
 
@@ -125,15 +121,15 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
                         }}
                         className={`
                             flex items-center transition-all duration-300 group whitespace-nowrap border border-persona-border/20 text-persona-text hover:bg-persona-text/10
-                            ${isOpen ? 'gap-3 px-4 py-3 rounded-lg w-full justify-start' : 'justify-center p-2 rounded-full w-10 h-10 border-transparent hover:border-persona-border/20'}
+                            ${isOpen ? 'gap-3 px-4 py-3 2xl:py-4 rounded-lg w-full justify-start' : 'justify-center p-2 rounded-full w-10 h-10 border-transparent hover:border-persona-border/20'}
                         `}
                         title="New Chat"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 2xl:w-6 2xl:h-6">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
-                        <span className={`font-serif italic tracking-wider text-sm transition-all duration-300 overflow-hidden ${isOpen ? 'opacity-100 w-auto ml-1' : 'opacity-0 w-0 ml-0'}`}>
+                        <span className={`font-serif italic tracking-wider text-sm 2xl:text-base transition-all duration-300 overflow-hidden ${isOpen ? 'opacity-100 w-auto ml-1' : 'opacity-0 w-0 ml-0'}`}>
                             New Chat
                         </span>
                     </button>
@@ -142,18 +138,14 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
 
                 {/* Session List */}
                 <div className={`flex-1 overflow-y-auto scrollbar-hide flex flex-col gap-1 ${isOpen ? 'px-3 pb-3' : 'px-1 items-center'}`}>
-                    {isOpen && <h3 className="text-[11px] font-serif italic tracking-widest text-persona-text/50 mb-3 px-2">recent</h3>}
-                    <AnimatePresence>
+                    {isOpen && <h3 className="text-[10px] 2xl:text-xs font-serif italic tracking-widest text-persona-text/50 mb-3 px-2">recent</h3>}
+                    <div className="flex flex-col gap-1">
                         {sessions.sort((a, b) => b.timestamp - a.timestamp).map((session) => (
-                            <motion.div
+                            <div
                                 key={session.id}
-                                layout
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -50, height: 0, marginBottom: 0, transition: { duration: 0.3, ease: "easeInOut" } }}
                                 className={`
                                     group relative flex items-center cursor-pointer transition-colors duration-200 rounded-md
-                                    ${isOpen ? 'w-full px-3 py-3 gap-3 hover:bg-persona-text/5' : 'justify-center w-10 h-10 hover:bg-persona-text/10 rounded-full'}
+                                    ${isOpen ? 'w-full px-3 py-3 2xl:py-4 gap-3 hover:bg-persona-text/5' : 'justify-center w-10 h-10 hover:bg-persona-text/10 rounded-full'}
                                     ${currentSessionId === session.id ? 'bg-persona-text/10' : ''}
                                 `}
                                 onClick={() => {
@@ -167,10 +159,10 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
                                 {isOpen && (
                                     <>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-xs font-medium truncate ${currentSessionId === session.id ? 'text-persona-text' : 'text-persona-text/70'}`}>
+                                            <p className={`text-xs 2xl:text-sm font-medium truncate ${currentSessionId === session.id ? 'text-persona-text' : 'text-persona-text/70'}`}>
                                                 {session.title || 'Untitled Conversation'}
                                             </p>
-                                            <p className="text-[9px] text-persona-text/40 truncate mt-0.5">
+                                            <p className="text-[9px] 2xl:text-[10px] text-persona-text/40 truncate mt-0.5">
                                                 {new Date(session.timestamp).toLocaleDateString()}
                                             </p>
                                         </div>
@@ -188,20 +180,17 @@ export default function Sidebar({ sessions = [], currentSessionId, onNewChat, on
                                         </button>
                                     </>
                                 )}
-                            </motion.div>
+                            </div>
                         ))}
-                    </AnimatePresence>
+                    </div>
                 </div>
             </motion.aside>
 
             {/* Mobile Backdrop */}
             {isMobile && isOpen && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
+                <div
                     onClick={() => setIsOpen(false)}
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 transition-opacity duration-200"
                 />
             )}
         </>

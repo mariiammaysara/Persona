@@ -2,13 +2,27 @@ import os
 from dotenv import load_dotenv
 from pathlib import Path
 
-# Locate .env in the root directory (two levels up from backend/config)
-env_path = Path(__file__).resolve().parent.parent.parent / '.env'
+# Locate .env
+# Priority 1: Inside backend/ directory (parent of config/)
+backend_env = Path(__file__).resolve().parent.parent / '.env'
+# Priority 2: Project root (parent of backend/)
+root_env = Path(__file__).resolve().parent.parent.parent / '.env'
+
+if backend_env.exists():
+    env_path = backend_env
+else:
+    env_path = root_env
+
 load_dotenv(dotenv_path=env_path)
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+HF_TOKEN = os.getenv("HF_TOKEN")
+PRIMARY_MODEL = os.getenv("PRIMARY_MODEL", "Qwen/Qwen2.5-7B-Instruct")
+FALLBACK_MODEL = os.getenv("FALLBACK_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "hf")
 
-if not GROQ_API_KEY:
-    print(f"DEBUG: Looking for .env file at: {env_path}")
-    print(f"DEBUG: Current Working Directory: {os.getcwd()}")
-    raise ValueError("GROQ_API_KEY not found in .env file. Please make sure you have created the file and added the key.")
+if not HF_TOKEN:
+    # Check if we are in a build environment or if it's explicitly set to skip
+    if os.getenv("SKIP_SECRETS_CHECK", "false").lower() == "true":
+        pass  # Skip check for build/CI
+    else:
+        raise ValueError("HF_TOKEN environment variable is missing. Please set it in .env or the environment.")

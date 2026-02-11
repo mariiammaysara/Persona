@@ -1,43 +1,45 @@
-# Use official Node.js image
-# Use official Node.js image
-FROM node:20-alpine AS builder
-
-# Set working directory
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package files
 COPY package.json package-lock.json ./
-
-# Install dependencies
 RUN npm ci
 
-# Copy all files
+# Stage 2: Builder
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build args (Required for Next.js Static Optimization)
+# Environment variables for build time
 ARG NEXT_PUBLIC_BACKEND_URL
-ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
+ENV NEXT_PUBLIC_BACKEND_URL=${NEXT_PUBLIC_BACKEND_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the Next.js app
 RUN npm run build
 
-# Runner stage
+# Stage 3: Runner
 FROM node:20-alpine AS runner
-
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy necessary files from builder
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
-COPY --from=builder /app/next.config.ts ./
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy necessary files
+# If standalone mode is not enabled in next.config.ts, we need node_modules
+# Assuming standard build for safety as standalone requires config change
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# Expose port 3000
+USER nextjs
+
 EXPOSE 3000
 
-# Start the application
+ENV PORT=3000
 CMD ["npm", "start"]

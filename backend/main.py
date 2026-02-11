@@ -2,22 +2,21 @@
 Persona AI Backend API.
 
 This module provides the core API endpoints for the Persona chat application.
-It handles character management, chat interactions using the Groq API (Llama 3),
+It handles character management, chat interactions using the Hugging Face Inference API,
 and language detection for context-aware responses.
 
 Author: Mariam Maysara
 """
 
+import os
 import logging
 from typing import List, Optional, Generator
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from groq import Groq
 import uvicorn
 
-from config import GROQ_API_KEY
 from persona_config.prompts import character_personalities as characters
 
 
@@ -31,12 +30,14 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Persona AI API", description="Production-ready API for Persona Chat", version="1.0.0")
 
-# Initialize Groq Client
-if not GROQ_API_KEY:
-    logger.error("GROQ_API_KEY missing from environment variables.")
-    raise ValueError("GROQ_API_KEY is not set in environment variables.")
-
-client = Groq(api_key=GROQ_API_KEY)
+# Initialize LLM Engine
+from llm.factory import create_llm_engine
+try:
+    llm_engine = create_llm_engine()
+    logger.info("LLM Engine initialized successfully.")
+except Exception as e:
+    logger.error(f"Failed to initialize LLM Engine: {e}")
+    raise e
 
 # CORS Configuration
 # In production, restrict allow_origins to specific domains.
@@ -101,7 +102,7 @@ def health_check():
     """
     Health check endpoint to verify backend status.
     """
-    return {"status": "Persona backend running (Groq Powered)"}
+    return {"status": "Persona backend running (Hugging Face Powered)"}
 
 
 @app.get("/characters")
@@ -118,7 +119,7 @@ def get_characters():
 @app.post("/chat")
 async def chat(req: ChatRequest):
     """
-    Handles chat requests, generates AI responses using Groq, and streams the output.
+    Handles chat requests, generates AI responses using the configured LLM, and streams the output.
 
     Args:
         req (ChatRequest): The chat request containing character, message, and history.
@@ -181,26 +182,40 @@ async def chat(req: ChatRequest):
     messages.append({"role": "user", "content": req.message})
 
     try:
-        # Call Groq API with Streaming
-        stream = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=messages,
-            temperature=0.7,
-            max_tokens=1024,
-            top_p=1,
-            stream=True,
-            stop=None,
+        # Call LLM Engine with Streaming
+        # The engine manages primary/fallback logic
+        def stream_generator() -> Generator[str, None, None]:
+            """Yields content chunks from the LLM stream."""
+            stream = llm_engine.stream_chat(
+                messages=messages,
+                temperature=0.7,
+                max_tokens=1024,
+                top_p=0.9, # Consistent with new default
+            )
+            for chunk in stream:
+                yield chunk
+
+        # Determine model for header (Best Effort based on config)
+        # Note: If runtime fallback occurs during stream, header reflects initial intent.
+        model_name = "Unknown"
+        force_fallback = os.getenv("FORCE_FALLBACK", "false").lower() == "true"
+        
+        if hasattr(llm_engine, "primary_model"):
+            primary = llm_engine.primary_model
+            fallback = getattr(llm_engine, "fallback_model", None)
+            
+            if force_fallback and fallback:
+                model_name = fallback
+            else:
+                model_name = primary
+
+        return StreamingResponse(
+            stream_generator(), 
+            media_type="text/plain",
+            headers={"X-Model-Used": str(model_name)}
         )
 
-        def stream_generator() -> Generator[str, None, None]:
-            """Yields content chunks from the API stream."""
-            for chunk in stream:
-                if chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
-
-        return StreamingResponse(stream_generator(), media_type="text/plain")
-
     except Exception as e:
-        logger.error(f"Groq API Error: {str(e)}")
+        logger.error(f"LLM Engine Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal Server Error: Unable to process request.")
 

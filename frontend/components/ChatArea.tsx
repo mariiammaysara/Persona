@@ -35,16 +35,17 @@ export default function ChatArea({ messages, isLoading }: ChatAreaProps) {
   }, [messages, isLoading]);
 
   return (
-    <section className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 scrollbar-hide">
-      <div className="flex-1 flex flex-col justify-end gap-4 max-w-3xl mx-auto w-full pb-4">
+    <section className="flex-1 overflow-y-auto px-4 py-3 md:pt-6 flex flex-col gap-3 scrollbar-hide">
+      <div className="flex-1 flex flex-col justify-end gap-6 2xl:gap-8 w-full md:max-w-2xl lg:max-w-3xl 2xl:max-w-4xl mx-auto pb-8 2xl:pb-12">
         {messages.map((msg, index) => {
           // Render pulse indicator for empty AI message (Typing state)
           if (msg.role === 'ai' && !msg.content) {
             return (
-              <div key={index} className="self-start px-5 py-3">
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-persona-text/40 rounded-full animate-[pulse_1.5s_infinite]"></span>
-                  <span className="w-1.5 h-1.5 bg-persona-text/40 rounded-full animate-[pulse_1.5s_infinite] delay-150"></span>
+              <div key={index} className="self-start px-5 py-5 2xl:px-6 2xl:py-6">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse delay-150"></span>
+                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse delay-300"></span>
                 </div>
               </div>
             )
