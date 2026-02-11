@@ -98,7 +98,7 @@ The project is fully containerized for production.
 - **Non-Root Execution**: Containers run as unprivileged users (`appuser` / `nextjs`) to minimize attack surface.
 - **Input Validation**: All API inputs are validated using Pydantic schemas.
 
-## License
-
-© 2026 Persona AI. Designed & Developed by Mariam Maysara.
-All Rights Reserved.
+---
+<p align="center">
+  <strong>Developed by Mariam Maysara</strong>
+</p>
