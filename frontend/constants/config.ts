@@ -1,8 +1,12 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const getApiBaseUrl = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return url.replace(/\/$/, "");
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 export const ENDPOINTS = {
-  chat: "/api/v1/chat",
+  chat: `${API_BASE_URL}/api/v1/chat`,
 } as const;
 
 export const STORAGE_KEY = "persona_sessions";
