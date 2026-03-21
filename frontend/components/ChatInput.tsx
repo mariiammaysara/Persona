@@ -13,17 +13,17 @@ interface ChatInputProps {
 
 /**
  * ChatInput Component.
- * A premium, styled input field with a glowing effect and animated send button.
- * Responsive for Mobile, Tablet, Desktop, and TV.
+ * Redesigned with a premium, block-style layout.
+ * Features a dynamic send button and a subtle plus/attach icon.
  */
 export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [input, setInput] = useState('');
+  const [hasText, setHasText] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-focus on mount and when re-enabled
   useEffect(() => {
     if (!disabled && textareaRef.current) {
-      // slight delay to ensure render
       setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [disabled]);
@@ -33,7 +33,7 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
     if (trimmed && !disabled) {
       onSend(trimmed);
       setInput('');
-      // Reset height if we were doing auto-expand, but for now fixed/scrolling is fine
+      setHasText(false);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -48,45 +48,73 @@ export default function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-    // Auto-expand logic simple
-    e.target.style.height = 'auto';
-    e.target.style.height = `${Math.min(e.target.scrollHeight, 150)}px`;
+    const val = e.target.value;
+    setInput(val);
+    setHasText(val.trim().length > 0);
   };
 
   return (
-    <div className="w-full flex justify-center px-4 pb-4 md:pb-6 2xl:pb-10">
-      <div className="relative group w-full md:max-w-2xl lg:max-w-3xl 2xl:max-w-4xl">
-
-        {/* Input Container */}
-        <div className="relative flex items-end bg-persona-bg border border-persona-text/10 rounded-2xl pl-4 pr-2 py-3 md:py-4 2xl:py-6 shadow-lg transition-all duration-300 focus-within:border-persona-text/30 focus-within:shadow-[0_0_15px_rgba(227,213,202,0.05)]">
+    <div className="w-full flex justify-center px-4">
+      <div className="relative group w-full max-w-4xl">
+        <div className="
+          w-full
+          bg-[#1a1a1a]
+          border border-[#E3D5CA]/10
+          rounded-2xl
+          px-4 py-3
+          flex flex-col gap-2
+          transition-all duration-300
+          focus-within:border-[#E3D5CA]/20
+          shadow-lg
+        ">
+          {/* Textarea */}
           <textarea
             ref={textareaRef}
+            placeholder={disabled ? "Waiting..." : "Ask anything..."}
             rows={1}
             value={input}
             onChange={handleChange}
-            placeholder={disabled ? "Waiting for response..." : "Ask anything..."}
             disabled={disabled}
             onKeyDown={handleKeyDown}
-            className="flex-1 bg-transparent outline-none text-base md:text-lg 2xl:text-xl text-persona-text placeholder:text-persona-text/20 font-serif italic disabled:opacity-50 min-w-0 tracking-wide pr-10 resize-none max-h-[150px] scrollbar-hide py-1 2xl:py-2"
+            className="
+              w-full bg-transparent resize-none
+              text-[#E3D5CA] text-sm md:text-base leading-6
+              placeholder:text-[#E3D5CA]/25
+              focus:outline-none
+              min-h-[24px] max-h-[200px]
+              overflow-y-auto scrollbar-none
+              tracking-wide
+            "
+            onInput={(e) => {
+              const el = e.currentTarget;
+              el.style.height = "auto";
+              el.style.height = Math.min(el.scrollHeight, 200) + "px";
+            }}
           />
 
-          <div className="absolute right-3 bottom-3 2xl:bottom-5 w-10 h-10 flex items-center justify-center">
+          {/* Bottom row - Right aligned send only */}
+          <div className="flex items-center justify-end">
+            {/* Right — send button, only visible when text exists */}
             <AnimatePresence>
-              {input.trim() && !disabled && (
+              {hasText && !disabled && (
                 <motion.button
+                  key="send-btn"
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={handleSend}
-                  className="p-2 md:p-2.5 2xl:p-3 rounded-xl text-persona-bg bg-persona-text shadow-sm hover:shadow-md transition-shadow"
+                  className="
+                    w-7 h-7 rounded-full
+                    bg-[#E3D5CA]/90
+                    flex items-center justify-center
+                    text-[#0A0908] text-xs
+                    hover:bg-[#E3D5CA]
+                    transition-all duration-200
+                  "
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="md:w-5 md:h-5 2xl:w-6 2xl:h-6">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                  </svg>
+                  ↑
                 </motion.button>
               )}
             </AnimatePresence>

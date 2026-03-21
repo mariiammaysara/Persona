@@ -1,392 +1,138 @@
-/**
- * @file Page.tsx
- * @description Main application page for Persona AI.
- * Handles the core chat logic, session management, and UI orchestration.
- * Integrates SideBar, ChatArea, and PersonaSelector components.
- * 
- * @author Mariam Maysara
- */
+"use client";
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
+import { useChat } from "@/hooks/useChat";
 import Sidebar from "@/components/Sidebar";
 import PersonaSelector from "@/components/PersonaSelector";
 import ChatInput from "@/components/ChatInput";
 import ChatArea from "@/components/ChatArea";
 import Splash from "@/components/Splash";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { personas } from "@/lib/personaConfig";
 
-/**
- * Represents a single message in the chat history.
- */
-interface Message {
-  role: 'user' | 'ai';
-  content: string;
-}
-
-/**
- * Represents a chat session with metadata and message history.
- */
-export interface Session {
-  id: string;
-  title: string;
-  messages: Message[];
-  persona: string;
-  timestamp: number;
-}
-
-/**
- * Main Page Component.
- * Manages the global state of the application including sessions,
- * active persona, and chat interactions.
- */
 export default function Page() {
-  // State
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [activePersona, setActivePersona] = useState<string>('Sherlock Holmes');
-  const [isLoading, setIsLoading] = useState(false);
-  const [notification, setNotification] = useState<string | null>(null);
-
-  // Derived State
-  const currentSession = sessions.find(s => s.id === currentSessionId);
-  const messages = currentSession?.messages || [];
-
-  // Sync active persona with current session when switched
-  useEffect(() => {
-    if (currentSession?.persona) {
-      setActivePersona(currentSession.persona);
-    }
-  }, [currentSessionId, currentSession?.persona]);
-
-  // Load Sessions from LocalStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedSessions = localStorage.getItem('persona_sessions');
-      if (savedSessions) {
-        try {
-          const parsed: Session[] = JSON.parse(savedSessions);
-          // Filter out any ghost sessions just in case
-          const validSessions = parsed.filter(s => s.messages.length > 0);
-
-          if (validSessions.length > 0) {
-            setSessions(validSessions);
-            // DO NOT auto-select the most recent session. 
-            // Start with empty state for a fresh experience.
-            setCurrentSessionId(null);
-          }
-        } catch (e) {
-          console.error("Failed to parse sessions from local storage", e);
-        }
-      }
-    }
-  }, []);
-
-  // Save Sessions to LocalStorage (Persist ONLY non-empty sessions)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const validSessions = sessions.filter(s => s.messages.length > 0);
-      if (validSessions.length > 0) {
-        localStorage.setItem('persona_sessions', JSON.stringify(validSessions));
-      }
-    }
-  }, [sessions]);
-
+  const {
+    sessions,
+    currentSessionId,
+    activePersona,
+    messages,
+    isStreaming,
+    notification,
+    sendMessage,
+    selectPersona,
+    deleteSession,
+    selectSession,
+    newChat,
+  } = useChat();
 
   /**
-   * Creates a new empty chat session and sets it as active.
-   * If the current session is already empty, it prevents duplication.
+   * Helper to get a clean display name for the persona.
    */
-  const createNewSession = (initialMessage?: string) => {
-    // If we already have an active empty session, don't create another unless forcing
-    if (currentSessionId) {
-      const current = sessions.find(s => s.id === currentSessionId);
-      if (current && current.messages.length === 0) {
-        showToast("You're already starting a new conversation.");
-        return current.id;
-      }
-    }
-
-    const newSession: Session = {
-      id: Date.now().toString(),
-      title: 'New Conversation',
-      messages: [],
-      persona: activePersona,
-      timestamp: Date.now()
-    };
-
-    setSessions(prev => [newSession, ...prev]);
-    setCurrentSessionId(newSession.id);
-    return newSession.id;
-  };
-
-  /**
-   * Displays a temporary notification toast to the user.
-   * @param msg - The message to display.
-   */
-  const showToast = (msg: string) => {
-    setNotification(msg);
-    setTimeout(() => setNotification(null), 3000);
-  };
-
-  const handleNewChat = () => {
-    // Just reset to null to show Splash screen
-    setCurrentSessionId(null);
-  };
-
-  const handleSelectSession = (id: string) => {
-    setCurrentSessionId(id);
-  };
-
-  const handleDeleteSession = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    const updated = sessions.filter(s => s.id !== id);
-    setSessions(updated);
-    if (currentSessionId === id) {
-      setCurrentSessionId(null); // Go to splash specificially
-    }
-  };
-
-  const handlePersonaSelect = (id: string) => {
-    setActivePersona(id);
-    // If we have an active session, update its persona too
-    if (currentSessionId) {
-      setSessions(prev => prev.map(s =>
-        s.id === currentSessionId ? { ...s, persona: id } : s
-      ));
-    }
-  };
-
-  /**
-   * Helper to format persona names for display (e.g. "Sleepy Cat" -> "Mittens").
-   * @param id - The persona ID.
-   * @returns The display name.
-   */
-  const getPersonaName = (id: string) => {
-    if (id === 'Sleepy Cat') return 'Mittens';
-    return id.split(' ')[0];
-  };
-
-  /**
-   * Cleans up the AI response text by removing prefixes or system artifacts.
-   * @param text - The raw AI text.
-   * @returns Cleaned text.
-   */
-  const formatResponse = (text: string) => {
-    return text.replace(/^AI:\s*|^System:\s*/i, '').trim();
-  };
-
-  /**
-   * Handles sending a user message to the backend.
-   * Updates state optimistically, streams the response, and handles errors.
-   * @param text - The user's input text.
-   */
-  const handleSendMessage = async (text: string) => {
-    let targetSessionId = currentSessionId;
-
-    // If no session active, create one implicitly
-    if (!targetSessionId) {
-      const newSession: Session = {
-        id: Date.now().toString(),
-        title: 'New Conversation',
-        messages: [],
-        persona: activePersona,
-        timestamp: Date.now()
-      };
-      // We must add it to state immediately locally to start the flow
-      setSessions(prev => [newSession, ...prev]);
-      setCurrentSessionId(newSession.id);
-      targetSessionId = newSession.id;
-    }
-
-    // 1. Optimistic Update (User)
-    const userMsg: Message = { role: 'user', content: text };
-
-    // 2. Prepare Placeholder for AI Response
-    const aiPlaceholder: Message = { role: 'ai', content: '' };
-
-    setSessions(prev => prev.map(s => {
-      if (s.id === targetSessionId) {
-        return { ...s, messages: [...s.messages, userMsg, aiPlaceholder], timestamp: Date.now() };
-      }
-      return s;
-    }));
-
-    setIsLoading(true);
-
-    try {
-      // Prepare History Logic (Context Window of last 5 turns)
-      // We need to look at the CURRENT session state. Since state updates are async, 
-      // we need to rely on what we know about the session.
-      // If it's a new session, history is empty.
-      // If it's existing, we grab from 'messages'.
-
-      const history = [];
-      let turnsFound = 0;
-
-      // If existing session, we use the messages from closure (which are slightly stale but checking length helps)
-      // BUT for a BRAND NEW session, messages is [], so history is empty. Correct.
-      // For existing session, messages has the history.
-
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === 'user' && messages[i + 1]?.role === 'ai') {
-          history.unshift({
-            user: messages[i].content,
-            assistant: messages[i + 1].content
-          });
-          turnsFound++;
-          if (turnsFound >= 5) break;
-        }
-      }
-
-      // Resolve Backend URL
-      let baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
-
-      if (!baseUrl) {
-        if (process.env.NODE_ENV === 'production') {
-          console.error("🚨 CRITICAL: NEXT_PUBLIC_BACKEND_URL is missing in production environment.");
-          throw new Error("Backend URL is not configured.");
-        } else {
-          console.warn("⚠️ NEXT_PUBLIC_BACKEND_URL not found, defaulting to localhost:8000 for development.");
-          baseUrl = 'http://localhost:8000';
-        }
-      }
-
-      const cleanBaseUrl = baseUrl.replace(/\/+$/, "");
-
-      const response = await fetch(`${cleanBaseUrl}/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          character: activePersona, // Use activePersona here to be safe
-          message: text,
-          history: history
-        })
-      });
-
-      if (!response.ok) throw new Error('API Error');
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let aiContent = '';
-
-      // Stream Reading Loop
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value);
-        aiContent += chunk;
-
-        // Streaming State Update
-        setSessions(prev => prev.map(s => {
-          if (s.id === targetSessionId) {
-            const updatedMsgs = [...s.messages];
-            const lastIdx = updatedMsgs.length - 1;
-            // Ensure we are updating the AI placeholder
-            if (lastIdx >= 0 && updatedMsgs[lastIdx].role === 'ai') {
-              updatedMsgs[lastIdx] = { ...updatedMsgs[lastIdx], content: aiContent };
-            }
-            return { ...s, messages: updatedMsgs };
-          }
-          return s;
-        }));
-      }
-
-      // Final Polish & Save (Auto-Title Logic)
-      const cleanContent = formatResponse(aiContent);
-      setSessions(prev => prev.map(s => {
-        if (s.id === targetSessionId) {
-          const updatedMsgs = [...s.messages];
-          const lastIdx = updatedMsgs.length - 1;
-          if (lastIdx >= 0) {
-            updatedMsgs[lastIdx] = { ...updatedMsgs[lastIdx], content: cleanContent };
-          }
-
-          let title = s.title;
-          // Auto-Title Logic (Check if this is the first exchange: 2 messages total)
-          if (s.messages.length <= 2) {
-            const cleanText = text.replace(/^(Hi|Hello|Hey|Greetings)\s*/i, '').trim();
-            const words = cleanText.split(' ').slice(0, 5).join(' ');
-            title = words.length > 0 ? words : 'New Conversation';
-          }
-
-          return { ...s, messages: updatedMsgs, title, timestamp: Date.now() };
-        }
-        return s;
-      }));
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      showToast("Unable to connect to Persona Core.");
-      // Rollback: Remove the placeholder if failed
-      setSessions(prev => prev.map(s => {
-        if (s.id === targetSessionId) {
-          const msgs = s.messages.filter(m => m.content !== '' || m.role !== 'ai');
-          return { ...s, messages: msgs };
-        }
-        return s;
-      }));
-    } finally {
-      setIsLoading(false);
-    }
+  const getPersonaName = (id: string): string => {
+    // @ts-ignore - indexing lib/personas with technical ID string
+    return personas[id]?.label || id.charAt(0).toUpperCase() + id.slice(1).replace('_', ' ');
   };
 
   return (
-    <main className="flex h-[100dvh] w-full bg-persona-bg overflow-hidden text-persona-text font-sans">
+    <main className="flex h-[100dvh] w-full bg-persona-bg overflow-hidden text-persona-text font-sans relative">
       <Sidebar
-        sessions={sessions.filter(s => s.messages.length > 0)}
+        sessions={sessions}
         currentSessionId={currentSessionId}
-        onNewChat={handleNewChat}
-        onSelectSession={handleSelectSession}
-        onDeleteSession={handleDeleteSession}
+        activePersona={activePersona}
+        onNewChat={newChat}
+        onSelectSession={selectSession}
+        onDeleteSession={deleteSession}
       />
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="flex-1 flex flex-col min-w-0 relative"
+        className="flex-1 relative w-full h-full overflow-hidden"
       >
         {notification && (
-          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-2 bg-[#1a0f0f] backdrop-blur-md border border-red-900/30 text-red-200/80 text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl transition-all animate-pulse">
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-[60] px-6 py-2 bg-[#1a0f0f] backdrop-blur-md border border-red-900/30 text-red-200/80 text-[10px] uppercase tracking-[0.2em] rounded-full shadow-2xl transition-all animate-pulse">
             {notification}
           </div>
         )}
 
-        <div className="w-full flex justify-center pt-8 pb-4 z-10">
+        {/* GitHub Repository Link */}
+        <motion.a
+          href="https://github.com/mariiammaysara/Persona"
+          target="_blank"
+          rel="noopener noreferrer"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
+          className="absolute top-6 right-6 z-50 p-2 text-persona-text/20 hover:text-persona-text transition-all duration-500 hover:drop-shadow-[0_0_12px_rgba(227,213,202,0.6)] cursor-pointer group"
+          title="View Source on GitHub"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-500 group-hover:scale-110"
+          >
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+        </motion.a>
+
+        {/* Top Header - Compact Persona Selector restored to top center */}
+        <div className="absolute top-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
           <PersonaSelector
             selectedPersona={activePersona}
-            onSelect={handlePersonaSelect}
+            onSelect={selectPersona}
           />
         </div>
 
-        <div className="flex-1 flex flex-col relative overflow-hidden">
+        {/* Dynamic Content Area */}
+        <div className="w-full h-full relative">
           <ErrorBoundary>
-            {messages.length > 0 ? (
-              <ChatArea messages={messages} isLoading={isLoading} />
-            ) : (
-              <Splash personaName={getPersonaName(activePersona)} />
+            {/* Background Splash - Only visible when no messages */}
+            {messages.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <Splash 
+                  personaId={activePersona} 
+                  personaName={getPersonaName(activePersona)} 
+                />
+              </div>
             )}
+
+            {/* Chat Area - Updated padding for raised input */}
+            {messages.length > 0 && (
+              <div className="w-full h-full flex flex-col pb-[150px]">
+                <ChatArea 
+                  messages={messages} 
+                  isLoading={isStreaming} 
+                  personaId={activePersona}
+                  personaName={getPersonaName(activePersona)}
+                />
+              </div>
+            )}
+
+            {/* Repositioned Input Area - Pinned to bottom, raised slightly more */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 px-4 pb-8 pt-2">
+              {/* Fade gradient above input in chat state */}
+              {messages.length > 0 && (
+                <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-t from-[#0A0908] to-transparent pointer-events-none -translate-y-full" />
+              )}
+              
+              <motion.div 
+                initial={messages.length === 0 ? { opacity: 0, y: 10 } : false}
+                animate={messages.length === 0 ? { opacity: 1, y: 0 } : false}
+                transition={{ duration: 0.8, ease: "easeOut", delay: 0.6 }}
+                className="max-w-4xl mx-auto w-full flex flex-col items-center px-2"
+              >
+                <ChatInput onSend={sendMessage} disabled={isStreaming} />
+              </motion.div>
+            </div>
           </ErrorBoundary>
-        </div>
-
-        <div className="relative w-full z-20 bg-gradient-to-t from-persona-bg via-persona-bg to-transparent pt-4">
-          <ChatInput onSend={handleSendMessage} disabled={isLoading} />
-
-          <div className="absolute bottom-4 w-full flex justify-center pointer-events-none">
-            <a
-              href="https://www.linkedin.com/in/mariam-maysara/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative group text-[8px] md:text-[9px] text-persona-text/20 font-sans tracking-[0.3em] transition-all duration-700 ease-out hover:text-persona-text hover:scale-105 hover:drop-shadow-[0_0_12px_rgba(227,213,202,0.8)] cursor-pointer pointer-events-auto select-none backdrop-blur-[1px]"
-            >
-              Designed & Developed by Mariam Maysara
-              <span className="absolute -bottom-1 left-1/2 w-0 h-[0.5px] bg-persona-text group-hover:w-full group-hover:left-0 transition-all duration-500 ease-out"></span>
-            </a>
-          </div>
         </div>
       </motion.div>
     </main>
