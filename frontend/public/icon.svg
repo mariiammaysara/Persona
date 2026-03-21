@@ -1,0 +1,53 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    {/* Delicate Mask Outline */}
+    <path 
+        d="M60 10C35 10 20 30 20 55C20 80 35 105 60 115C85 105 100 80 100 55C100 30 85 10 60 10Z" 
+        stroke="#E3D5CA" 
+        stroke-width="0.8" 
+        stroke-opacity="0.5" 
+    />
+    
+    {/* Subtle Inner Glow Arc */}
+    <path 
+        d="M30 40C35 25 50 20 60 20C70 20 85 25 90 40" 
+        stroke="#E3D5CA" 
+        stroke-width="0.3" 
+        stroke-opacity="0.2" 
+    />
+
+    {/* Minimalist Eyes - Slits of Identity */}
+    <path 
+        d="M38 52C43 49 53 49 58 52" 
+        stroke="#E3D5CA" 
+        stroke-width="1.8" 
+        stroke-linecap="round" 
+        stroke-opacity="0.9"
+    />
+    <path 
+        d="M62 52C67 49 77 49 82 52" 
+        stroke="#E3D5CA" 
+        stroke-width="1.8" 
+        stroke-linecap="round" 
+        stroke-opacity="0.9"
+    />
+
+    {/* The Mouth - Fading into a Chat tail */}
+    <path 
+        d="M45 85C50 92 70 92 75 85" 
+        stroke="#E3D5CA" 
+        stroke-width="0.8" 
+        stroke-linecap="round" 
+        stroke-opacity="0.4"
+    />
+    
+    {/* Central Line of Symmetry */}
+    <line 
+        x1="60" y1="10" x2="60" y2="115" 
+        stroke="#E3D5CA" 
+        stroke-width="0.2" 
+        stroke-opacity="0.1" 
+    />
+
+    {/* High-end decorative dots */}
+    <circle cx="60" cy="115" r="1.2" fill="#E3D5CA" fill-opacity="0.6" />
+</svg>

@@ -1,13 +1,11 @@
-import { useEffect, useRef } from 'react';
-import Bubble from "./Bubble";
+'use client';
 
-/**
- * Represents a chat message.
- */
-interface Message {
-  role: 'user' | 'ai';
-  content: string;
-}
+import { useEffect, useRef } from 'react';
+import { Message } from '@/types/chat';
+import Bubble from "./Bubble";
+import TypingIndicator from "./TypingIndicator";
+import PersonaMask from './PersonaMask';
+import { personas } from '@/lib/personaConfig';
 
 /**
  * Props for ChatArea.
@@ -17,49 +15,60 @@ interface ChatAreaProps {
   messages: Message[];
   /** Whether a message is currently loading (optional, used for scroll trigger). */
   isLoading?: boolean;
+  /** The technical ID of the active persona. */
+  personaId: string;
+  /** The display name of the active persona. */
+  personaName: string;
 }
 
 /**
  * ChatArea Component.
  * Displays the scrollable list of chat messages and handles auto-scrolling.
- * Renders a "Pulse" typing indicator if the last AI message is empty.
+ * Updated with a sticky persona header for better visibility.
  */
-export default function ChatArea({ messages, isLoading }: ChatAreaProps) {
+export default function ChatArea({ messages, isLoading, personaId, personaName }: ChatAreaProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   /**
-   * Auto-scroll to bottom when messages change.
+   * Auto-scroll to bottom when messages change or loading state flips.
    */
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      const { scrollHeight, clientHeight } = scrollContainerRef.current;
+      scrollContainerRef.current.scrollTo({
+        top: scrollHeight - clientHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages, isLoading]);
 
-  return (
-    <section className="flex-1 overflow-y-auto px-4 py-3 md:pt-6 flex flex-col gap-3 scrollbar-hide">
-      <div className="flex-1 flex flex-col justify-end gap-6 2xl:gap-8 w-full md:max-w-2xl lg:max-w-3xl 2xl:max-w-4xl mx-auto pb-8 2xl:pb-12">
-        {messages.map((msg, index) => {
-          // Render pulse indicator for empty AI message (Typing state)
-          if (msg.role === 'ai' && !msg.content) {
-            return (
-              <div key={index} className="self-start px-5 py-5 2xl:px-6 2xl:py-6">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse"></span>
-                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse delay-150"></span>
-                  <span className="w-1.5 h-1.5 2xl:w-2 2xl:h-2 bg-persona-text/40 rounded-full animate-pulse delay-300"></span>
-                </div>
-              </div>
-            )
-          }
-          return (
-            <Bubble
-              key={index}
-              role={msg.role}
-              text={msg.content}
-            />
-          );
-        })}
+  const lastMessageIsUser = messages[messages.length - 1]?.role === 'user';
 
-        <div ref={bottomRef} />
+  return (
+    <section 
+      ref={scrollContainerRef}
+      className="flex-1 overflow-y-auto px-4 pt-28 pb-8 md:pt-36 flex flex-col scrollbar-hide relative"
+    >
+      {/* Centered Max-Width Container for Message List Alignment */}
+      <div className="flex-1 flex flex-col gap-6 w-full max-w-4xl mx-auto px-6 md:px-10 pb-8">
+        {messages.map((msg) => (
+          <Bubble
+            key={msg.id}
+            role={msg.role}
+            text={msg.content}
+          />
+        ))}
+
+        {isLoading && lastMessageIsUser && (
+          <div className="self-start w-full">
+             <div className="max-w-4xl mx-auto px-6 md:px-10">
+                <TypingIndicator />
+             </div>
+          </div>
+        )}
+
+        <div ref={bottomRef} className="h-4" />
       </div>
     </section>
   );

@@ -1,24 +1,26 @@
-import { Search, Cpu, Sparkles, BookOpen, Cat } from 'lucide-react';
+import { SherlockIcon, TonyIcon, YodaIcon, HermioneIcon, CatIcon } from '@/components/PersonaIcons';
 
 export const personas = {
-    'Sherlock Holmes': {
+    'sherlock': {
         label: "Sherlock",
-        icon: Search
+        icon: SherlockIcon
     },
-    'Tony Stark': {
+    'tony_stark': {
         label: "Tony",
-        icon: Cpu
+        icon: TonyIcon
     },
-    'Yoda': {
+    'yoda': {
         label: "Yoda",
-        icon: Sparkles
+        icon: YodaIcon
     },
-    'Hermione Granger': {
+    'hermione': {
         label: "Hermione",
-        icon: BookOpen
+        icon: HermioneIcon
     },
-    'Sleepy Cat': {
+    'mittens': {
         label: "Mittens",
-        icon: Cat
+        icon: CatIcon
     }
-};
+} as const;
+
+export type PersonaId = keyof typeof personas;

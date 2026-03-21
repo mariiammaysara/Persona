@@ -1,11 +1,12 @@
-'use client';
-
 import { motion, AnimatePresence } from 'framer-motion';
+import PersonaMask from './PersonaMask';
 
 /**
  * Props for the Splash component.
  */
 interface SplashProps {
+    /** The technical ID of the active persona. */
+    personaId: string;
     /** The display name of the active persona. */
     personaName: string;
 }
@@ -13,52 +14,56 @@ interface SplashProps {
 /**
  * Splash Component.
  * The hero section displayed when the chat is empty.
- * Features a cinematic "Persona" title with breathing animation.
+ * Features a dynamic "Mask" logo that evolves based on the active persona.
  */
-export default function Splash({ personaName }: SplashProps) {
+export default function Splash({ personaId, personaName }: SplashProps) {
     return (
         <div className="flex flex-col items-center justify-center h-full pointer-events-none select-none">
-            <AnimatePresence mode="wait">
+            <AnimatePresence>
                 <motion.div
-                    key={personaName}
+                    key={personaId}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
                     exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.3 } }}
+                    transition={{ duration: 1.2 }}
                     className="flex flex-col items-center"
                 >
-                    {/* Breathing Title */}
-                    <motion.h1
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{
-                            opacity: 1,
+                    {/* Dynamic Persona Mask Logo */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ 
+                            opacity: 1, 
                             scale: 1,
-                            y: 0,
                             filter: [
-                                "drop-shadow(0 0 10px rgba(227,213,202,0.1))",
-                                "drop-shadow(0 0 15px rgba(227,213,202,0.2))",
-                                "drop-shadow(0 0 10px rgba(227,213,202,0.1))"
+                                "drop-shadow(0 0 10px rgba(227,213,202,0.05))",
+                                "drop-shadow(0 0 25px rgba(227,213,202,0.2))",
+                                "drop-shadow(0 0 10px rgba(227,213,202,0.05))"
                             ]
                         }}
-                        transition={{
-                            opacity: { duration: 1, ease: "easeOut" },
-                            scale: { duration: 1, ease: "easeOut" },
-                            y: { duration: 1, ease: "easeOut" },
-                            filter: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+                        transition={{ 
+                            duration: 1.2, 
+                            ease: "easeOut",
+                            filter: { duration: 4, repeat: Infinity, ease: "easeInOut" }
                         }}
-                        className="font-serif italic font-light text-7xl md:text-9xl text-transparent bg-clip-text bg-gradient-to-b from-[#E3D5CA] to-[#E3D5CA]/60 tracking-[0.02em] pb-2"
+                        className="mb-6"
                     >
-                        Persona
-                    </motion.h1>
+                        <PersonaMask 
+                            personaId={personaId} 
+                            size={160} 
+                            className="w-32 h-32 md:w-48 md:h-48"
+                            strokeWidth={0.8}
+                        />
+                    </motion.div>
 
-                    {/* Subtitle with Letter Spacing Animation */}
+                    {/* Subtitle - Letter-spacing animation */}
                     <motion.p
-                        initial={{ opacity: 0, letterSpacing: "0.2em" }}
-                        animate={{ opacity: 1, letterSpacing: "0.5em" }}
-                        transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
-                        className="mt-6 text-persona-text/40 font-sans font-light text-[9px] uppercase tracking-[0.5em]"
+                        initial={{ opacity: 0, letterSpacing: "0.6em" }}
+                        animate={{ opacity: 1, letterSpacing: "0.3em" }}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                        className="text-persona-text/40 font-sans font-light text-sm uppercase tracking-[0.3em]"
                     >
                         {personaName}
                     </motion.p>
-
-
                 </motion.div>
             </AnimatePresence>
         </div>
