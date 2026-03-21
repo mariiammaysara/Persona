@@ -9,7 +9,7 @@
   <br><br>
   <a href="https://persona.mariammaysara.com/"><strong>✦ Live Demo ✦</strong></a>
   &nbsp;&nbsp; | &nbsp;&nbsp;
-  <a href="https://persona.mariammaysara.com/docs"><strong>✦ API Docs ✦</strong></a>
+  <a href="https://persona-backend-qm5b.onrender.com/docs"><strong>✦ API Docs ✦</strong></a>
 </p>
 
 ---
@@ -57,25 +57,41 @@ Persona-based interaction is the core of the experience. Each character features
 
 ## ✦ System Architecture
 
-Persona is built on a **Modular Clean Architecture** (Onion Architecture) pattern, ensuring strict separation of concerns, high testability, and zero leakage of infrastructure details into business logic.
+Persona is designed around **Clean Architecture**, ensuring that the core business logic remains independent of external frameworks, libraries, and infrastructure.
 
-### **The Backend (Clean Architecture)**
-The backend is organized into four distinct layers:
+```text
+       ┌──────────────────────────────────┐
+       │     ✦ NEXT.JS FRONTEND ✦         │
+       │   (Next.js 15, Tailwind CSS)     │
+       └────────────────┬─────────────────┘
+                        │
+                        ▼ [Streaming API]
+                        │
+       ┌────────────────┴─────────────────┐
+       │     ✦ FASTAPI BACKEND ✦          │
+       │   (Modular Clean Architecture)   │
+       ├──────────────────────────────────┤
+       │  1. API LAYER (Routes, Deps)     │
+       ├──────────────────────────────────┤
+       │  2. APPLICATION (Use Cases)      │
+       ├──────────────────────────────────┤
+       │  3. DOMAIN (Entities, Enums)     │
+       ├──────────────────────────────────┤
+       │  4. INFRASTRUCTURE (Groq SDK)    │
+       └────────────────┬─────────────────┘
+                        │
+                        ▼ [LPU Acceleration]
+                        │
+       ┌────────────────┴─────────────────┐
+       │      ✦ GROQ AI ENGINE ✦         │
+       │   (Llama 3.3 70B Model)         │
+       └──────────────────────────────────┘
+```
 
-1.  **Domain Layer** (`app/domain`): Contains the core business logic, entities (`Persona`, `Message`), and abstractions (interfaces). It has **zero external dependencies**.
-2.  **Application Layer** (`app/application`): Orchestrates the flow of data via **Use Cases** (`ChatUseCase`). It depends only on domain abstractions.
-3.  **Infrastructure Layer** (`app/infrastructure`): Provides concrete implementations for domain interfaces. This includes the `GroqProvider` (LLM integration) and `PersonaRegistry` (knowledge base).
-4.  **API Layer** (`app/api`): The entry point for external requests. Thin FastAPI routes that delegate responsibility to application use cases.
-
-### **The Frontend (Next.js 15)**
-- **Modern Stack**: Built with Next.js 15 (App Router), React 19, and Tailwind CSS.
-- **Standalone Mode**: Optimized for production using `output: "standalone"` for minimal Docker image size.
-- **Fluid UI**: Framer Motion powers the 60fps animations and "Weighted Motion" design philosophy.
-
-### **DevOps & Infrastructure**
-- **Containerization**: Full Docker support with multi-stage builds and `docker-compose`.
-- **Health Monitoring**: Integrated backend health check (`/health`) with Docker auto-retries.
-- **Network Isolation**: Backend and Frontend communicate over a dedicated internal bridge network.
+### **Core Design Principles**
+- **Inward Dependencies**: Every layer only points inward. The **Domain** is the core.
+- **Contract-Based**: UseCases talk to **Abstract Interfaces** implemented via Groq.
+- **Type Safety**: End-to-end typing from TypeScript to Pydantic models.
 
 ---
 
@@ -107,7 +123,7 @@ The backend is organized into four distinct layers:
 
 ## ✦ API Reference
 
-- [**✦ API Documentation (Swagger UI) ✦**](https://persona.mariammaysara.com/docs)
+- [**✦ API Documentation (Swagger UI) ✦**](https://persona-backend-qm5b.onrender.com/docs)
 
 ### **Health Check**
 `GET /health`
