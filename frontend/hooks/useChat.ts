@@ -173,8 +173,18 @@ export function useChat() {
 
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.error("Stream error", err);
-      showToast("Unable to connect to Persona Core.");
+      
+      console.error("[CHAT_STREAM_ERROR]", err);
+      
+      let message = "Unable to connect to Persona Core.";
+      if (err.name === 'ApiError') {
+        if (err.status === 404) message = "Persona not found.";
+        else if (err.status >= 500) message = "Persona Core is currently overloaded. Please try again.";
+      } else if (err.message?.includes('Failed to fetch')) {
+        message = "Network error. Please check your connection.";
+      }
+      
+      showToast(message);
       // Rollback
       setSessions(prev => prev.map(s => 
         s.id === targetId 
