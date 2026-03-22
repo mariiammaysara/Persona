@@ -12,12 +12,6 @@
   <a href="https://persona-backend-qm5b.onrender.com/docs"><strong>✦ API Docs ✦</strong></a>
 </p>
 
-<p align="center">
-  <em>Note: Persona understands both Arabic and English, but exclusively responds in English.</em>
-</p>
-
----
-
 ---
 
 ## ✦ The Identities
