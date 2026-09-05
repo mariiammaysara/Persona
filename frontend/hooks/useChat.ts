@@ -88,7 +88,8 @@ export function useChat() {
   const sendMessage = useCallback(async (content: string) => {
     // 1. Cancel in-flight
     abortRef.current?.abort();
-    abortRef.current = new AbortController();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     let targetId = currentSessionId;
     
@@ -149,7 +150,7 @@ export function useChat() {
           }
           return s;
         }));
-      });
+      }, controller.signal);
 
       // Final Update (Title etc)
       setSessions(prev => prev.map(s => {
@@ -172,8 +173,17 @@ export function useChat() {
       }));
 
     } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      
+      if (err.name === 'AbortError') {
+        // Superseded by a newer message — drop the now-orphaned placeholder
+        // instead of leaving an empty assistant bubble behind forever.
+        setSessions(prev => prev.map(s =>
+          s.id === targetId
+            ? { ...s, messages: s.messages.filter(m => m.id !== aiPlaceholderId) }
+            : s
+        ));
+        return;
+      }
+
       console.error("[CHAT_STREAM_ERROR]", err);
       
       let message = "Unable to connect to Persona Core.";
@@ -192,7 +202,11 @@ export function useChat() {
           : s
       ));
     } finally {
-      setIsStreaming(false);
+      // Only clear the loading state if a newer request hasn't superseded
+      // this one — otherwise we'd flip isStreaming off mid-response.
+      if (abortRef.current === controller) {
+        setIsStreaming(false);
+      }
     }
   }, [currentSessionId, activePersona, sessions, createNewSession, showToast]);
 

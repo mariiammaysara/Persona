@@ -8,7 +8,11 @@ class HistoryItem(BaseModel):
     content: str
 
 class ChatRequest(BaseModel):
-    character: PersonaID
+    # Deliberately `str`, not `PersonaID` — an unknown value must reach
+    # PersonaRegistry.get() and raise PersonaNotFoundError (404), rather
+    # than being rejected by pydantic enum validation (422) before the
+    # route ever runs.
+    character: str
     message: str
     history: List[HistoryItem] = []
 
