@@ -16,7 +16,8 @@ from app.application.use_cases.chat_use_case import ChatUseCase
 @lru_cache
 def get_groq_provider() -> GroqProvider:
     '''Provide a singleton instance of the GroqProvider.'''
-    return GroqProvider(api_key=get_settings().groq_api_key)
+    settings = get_settings()
+    return GroqProvider(api_key=settings.groq_api_key, model=settings.model)
 
 
 @lru_cache
