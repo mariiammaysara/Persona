@@ -52,7 +52,13 @@ export function useChat() {
   }, []);
 
   // Persistence: Save
+  // Skipped while streaming — sendMessage calls setSessions on every
+  // streamed chunk, and re-serializing + writing the whole session list
+  // to localStorage on every token caused visible jank on longer replies.
+  // Once isStreaming flips back to false this effect re-runs (it's a
+  // dependency) and persists the final state, so nothing is lost.
   useEffect(() => {
+    if (isStreaming) return;
     if (typeof window !== 'undefined') {
       const valid = sessions.filter(s => s.messages.length > 0);
       if (valid.length > 0) {
@@ -62,7 +68,7 @@ export function useChat() {
         }));
       }
     }
-  }, [sessions]);
+  }, [sessions, isStreaming]);
 
   // Sync Persona
   useEffect(() => {

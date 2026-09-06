@@ -83,8 +83,11 @@ export default function Page() {
           </svg>
         </motion.a>
 
-        {/* Top Header - Compact Persona Selector restored to top center */}
-        <div className="absolute top-6 left-0 right-0 z-50 flex justify-center pointer-events-none">
+        {/* Top Header - Compact Persona Selector restored to top center. */}
+        {/* Inset from the edges (rather than left-0/right-0) so its now-full-width,
+            pointer-events-auto scroll track can't sit under the GitHub link or the
+            mobile sidebar toggle, which share the same z-50 stacking context. */}
+        <div className="absolute top-6 left-16 right-16 z-50 pointer-events-none">
           <PersonaSelector
             selectedPersona={activePersona}
             onSelect={selectPersona}

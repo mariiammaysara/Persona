@@ -17,9 +17,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif: ["Cormorant Garamond", "serif"],
-        sans: ["Inter", "sans-serif"],
-        arabic: ["IBM Plex Sans Arabic", "sans-serif"],
+        serif: ["var(--font-serif)", "serif"],
+        sans: ["var(--font-sans)", "sans-serif"],
+        arabic: ["var(--font-arabic)", "sans-serif"],
       },
       boxShadow: {
         glow: "0 0 10px rgba(227, 213, 202, 0.3)",
